@@ -1,1 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  passwordHash  String
+  createdAt     DateTime  @default(now())
+
+  stripeCustomerId String?
+  subscription     Subscription?
+  resumes          Resume[]
+  chatMessages     ChatMessage[]
+  interviewSets    InterviewSet[]
+}
+
+model Subscription {
+  id                   String   @id @default(cuid())
+  user                 User     @relation(fields: [userId], references: [id])
+  userId               String   @unique
+  stripeSubscriptionId String?  @unique
+  plan                 String   @default("FREE") // FREE, PRO, PREMIUM
+  status               String   @default("active") // active, canceled, past_due
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime @default(now())
+}
+
+model Resume {
+  id          String     @id @default(cuid())
+  user        User       @relation(fields: [userId], references: [id])
+  userId      String
+  fileName    String
+  rawText     String     @db.Text
+  createdAt   DateTime   @default(now())
+  analysis    Analysis?
+}
+
+model Analysis {
+  id             String   @id @default(cuid())
+  resume         Resume   @relation(fields: [resumeId], references: [id])
+  resumeId       String   @unique
+  score          Int
+  strengths      String   @db.Text
+  weaknesses     String   @db.Text
+  suggestions    String   @db.Text
+  extractedSkills String  @db.Text
+  createdAt      DateTime @default(now())
+}
+
+model InterviewSet {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  role        String
+  questions   String   @db.Text // JSON string array
+  createdAt   DateTime @default(now())
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  role      String   // "user" | "assistant"
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+}
 
